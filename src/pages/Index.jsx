@@ -30,14 +30,10 @@ const Index = () => {
       };
 
       mediaRecorderRef.current.onstop = () => {
-        if (audioChunksRef.current.length > 0) {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-          const audioUrl = URL.createObjectURL(audioBlob);
-          setAudioURL(audioUrl);
-          toast.success("Recording saved successfully!");
-        } else {
-          toast.error("No audio data was recorded.");
-        }
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        setAudioURL(audioUrl);
+        toast.success("Recording saved successfully!");
         audioChunksRef.current = [];
         cancelAnimationFrame(animationRef.current);
       };
@@ -67,32 +63,23 @@ const Index = () => {
 
     const draw = () => {
       animationRef.current = requestAnimationFrame(draw);
-      analyserRef.current.getByteTimeDomainData(dataArray);
+      analyserRef.current.getByteFrequencyData(dataArray);
 
       canvasCtx.fillStyle = 'rgb(200, 200, 200)';
       canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-      canvasCtx.lineWidth = 2;
-      canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
-      canvasCtx.beginPath();
 
-      const sliceWidth = canvas.width * 1.0 / bufferLength;
+      const barWidth = (canvas.width / bufferLength) * 2.5;
+      let barHeight;
       let x = 0;
 
       for (let i = 0; i < bufferLength; i++) {
-        const v = dataArray[i] / 128.0;
-        const y = v * canvas.height / 2;
+        barHeight = dataArray[i] / 2;
 
-        if (i === 0) {
-          canvasCtx.moveTo(x, y);
-        } else {
-          canvasCtx.lineTo(x, y);
-        }
+        canvasCtx.fillStyle = `rgb(${barHeight + 100}, 50, 50)`;
+        canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
 
-        x += sliceWidth;
+        x += barWidth + 1;
       }
-
-      canvasCtx.lineTo(canvas.width, canvas.height / 2);
-      canvasCtx.stroke();
     };
 
     draw();
