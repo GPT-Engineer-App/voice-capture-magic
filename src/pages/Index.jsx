@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Play } from "lucide-react";
+import { Mic, Square, Sun, Moon } from "lucide-react";
 import { toast } from "sonner";
+import { useTheme } from "@/components/theme-provider";
 
 const Index = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -11,6 +12,7 @@ const Index = () => {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
   const analyserRef = useRef(null);
+  const { theme, setTheme } = useTheme();
 
   const startRecording = async () => {
     try {
@@ -65,17 +67,19 @@ const Index = () => {
       animationRef.current = requestAnimationFrame(draw);
       analyserRef.current.getByteFrequencyData(dataArray);
 
-      canvasCtx.fillStyle = 'rgb(200, 200, 200)';
-      canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const gradient = canvasCtx.createLinearGradient(0, 0, canvas.width, 0);
+      gradient.addColorStop(0, theme === 'dark' ? '#8B5CF6' : '#3B82F6');
+      gradient.addColorStop(1, theme === 'dark' ? '#EC4899' : '#EF4444');
 
       const barWidth = (canvas.width / bufferLength) * 2.5;
-      let barHeight;
       let x = 0;
 
       for (let i = 0; i < bufferLength; i++) {
-        barHeight = dataArray[i] / 2;
+        const barHeight = dataArray[i] / 2;
 
-        canvasCtx.fillStyle = `rgb(${barHeight + 100}, 50, 50)`;
+        canvasCtx.fillStyle = gradient;
         canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
 
         x += barWidth + 1;
@@ -92,9 +96,18 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <div className="p-8 bg-white rounded-lg shadow-md">
-        <h1 className="text-3xl font-bold mb-6 text-center">Voice Recorder</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+      <div className="p-8 bg-card rounded-lg shadow-md">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-foreground">Voice Recorder</h1>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? <Sun className="h-[1.2rem] w-[1.2rem]" /> : <Moon className="h-[1.2rem] w-[1.2rem]" />}
+          </Button>
+        </div>
         <div className="flex justify-center space-x-4 mb-6">
           {!isRecording ? (
             <Button onClick={startRecording} className="bg-red-500 hover:bg-red-600">
@@ -108,9 +121,9 @@ const Index = () => {
         </div>
         {isRecording && (
           <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-2">Audio Amplitude</h2>
-            <canvas ref={canvasRef} width="300" height="100" className="border border-gray-300"></canvas>
-            <p className="text-sm text-center mt-2 text-red-500">Recording in progress...</p>
+            <h2 className="text-lg font-semibold mb-2 text-foreground">Audio Amplitude</h2>
+            <canvas ref={canvasRef} width="300" height="100" className="border border-border rounded-md"></canvas>
+            <p className="text-sm text-center mt-2 text-destructive">Recording in progress...</p>
           </div>
         )}
         {audioURL && (
