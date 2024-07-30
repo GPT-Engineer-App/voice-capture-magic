@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Mic, Square, Play } from "lucide-react";
+import { toast } from "sonner";
 
 const Index = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -23,13 +24,20 @@ const Index = () => {
       mediaRecorderRef.current = new MediaRecorder(stream);
       
       mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
       };
 
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        setAudioURL(audioUrl);
+        if (audioChunksRef.current.length > 0) {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+          const audioUrl = URL.createObjectURL(audioBlob);
+          setAudioURL(audioUrl);
+          toast.success("Recording saved successfully!");
+        } else {
+          toast.error("No audio data was recorded.");
+        }
         audioChunksRef.current = [];
         cancelAnimationFrame(animationRef.current);
       };
@@ -37,8 +45,10 @@ const Index = () => {
       mediaRecorderRef.current.start();
       setIsRecording(true);
       drawAmplitudeMeter();
+      toast.success("Recording started!");
     } catch (error) {
       console.error('Error accessing microphone:', error);
+      toast.error("Failed to start recording. Please check your microphone permissions.");
     }
   };
 
@@ -113,6 +123,7 @@ const Index = () => {
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-2">Audio Amplitude</h2>
             <canvas ref={canvasRef} width="300" height="100" className="border border-gray-300"></canvas>
+            <p className="text-sm text-center mt-2 text-red-500">Recording in progress...</p>
           </div>
         )}
         {audioURL && (
