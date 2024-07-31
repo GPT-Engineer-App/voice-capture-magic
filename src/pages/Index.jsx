@@ -73,7 +73,7 @@ const Index = () => {
       toast.success("Recording started!");
     } catch (error) {
       console.error('Error accessing microphone:', error);
-      toast.error("Failed to start recording. Please check your microphone permissions.");
+      // Removed error toast
     }
   };
 
@@ -82,6 +82,7 @@ const Index = () => {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       wavesurferRef.current.microphone.stop();
+      toast.success("Recording stopped!");
     }
   };
 
