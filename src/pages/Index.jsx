@@ -141,34 +141,38 @@ const Index = () => {
             </Button>
           )}
         </div>
-        <div className="mb-6 w-full">
-          <h2 className="text-lg font-semibold mb-2 text-foreground">Audio Waveform</h2>
-          <div ref={waveformRef} className="border border-border rounded-md"></div>
-          {isRecording && (
-            <p className="text-sm text-center mt-2 text-destructive">Recording in progress...</p>
+        <div className="w-full space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold mb-2 text-foreground">Audio Waveform</h2>
+            <div ref={waveformRef} className="border border-border rounded-md"></div>
+            {isRecording && (
+              <p className="text-sm text-center mt-2 text-destructive">Recording in progress...</p>
+            )}
+          </div>
+          
+          {audioURL && (
+            <div className="flex justify-center">
+              <div className="flex space-x-2">
+                <Button onClick={togglePlayPause} variant="outline">
+                  {isPlaying ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                  {isPlaying ? 'Pause' : 'Play'}
+                </Button>
+                <Button onClick={() => setAudioURL('')} variant="outline">
+                  Clear Recording
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {transcription && (
+            <div className="p-4 bg-muted rounded-md">
+              <h2 className="text-lg font-semibold mb-2 flex items-center">
+                <Type className="mr-2 h-4 w-4" /> Transcription
+              </h2>
+              <p className="text-sm text-foreground">{transcription}</p>
+            </div>
           )}
         </div>
-        {audioURL && (
-          <div className="flex flex-col items-center">
-            <div className="flex space-x-2 mb-4">
-              <Button onClick={togglePlayPause} variant="outline">
-                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                {isPlaying ? 'Pause' : 'Play'}
-              </Button>
-              <Button onClick={() => setAudioURL('')} variant="outline">
-                Clear Recording
-              </Button>
-            </div>
-          </div>
-        )}
-        {transcription && (
-          <div className="mt-6 p-4 bg-muted rounded-md">
-            <h2 className="text-lg font-semibold mb-2 flex items-center">
-              <Type className="mr-2 h-4 w-4" /> Transcription
-            </h2>
-            <p className="text-sm text-foreground">{transcription}</p>
-          </div>
-        )}
       </div>
     </div>
   );
