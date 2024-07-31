@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Sun, Moon, Play, Pause } from "lucide-react";
+import { Mic, Square, Sun, Moon, Play, Pause, Type } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ const Index = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
+  const [transcription, setTranscription] = useState('');
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const wavesurferRef = useRef(null);
@@ -83,7 +84,28 @@ const Index = () => {
       setIsRecording(false);
       wavesurferRef.current.microphone.stop();
       toast.success("Recording stopped!");
+      transcribeAudio();
     }
+  };
+
+  const transcribeAudio = () => {
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setTranscription(transcript);
+      toast.success("Transcription completed!");
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error', event.error);
+      toast.error("Transcription failed. Please try again.");
+    };
+
+    recognition.start();
   };
 
   useEffect(() => {
@@ -137,6 +159,14 @@ const Index = () => {
                 Clear Recording
               </Button>
             </div>
+          </div>
+        )}
+        {transcription && (
+          <div className="mt-6 p-4 bg-muted rounded-md">
+            <h2 className="text-lg font-semibold mb-2 flex items-center">
+              <Type className="mr-2 h-4 w-4" /> Transcription
+            </h2>
+            <p className="text-sm text-foreground">{transcription}</p>
           </div>
         )}
       </div>
