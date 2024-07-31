@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Mic, Square, Sun, Moon } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "@/components/theme-provider";
+import { cn } from "@/lib/utils";
 
 const Index = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -13,6 +14,10 @@ const Index = () => {
   const animationRef = useRef(null);
   const analyserRef = useRef(null);
   const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    document.body.className = theme;
+  }, [theme]);
 
   const startRecording = async () => {
     try {
@@ -96,7 +101,7 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+    <div className={cn("flex flex-col items-center justify-center min-h-screen bg-background", theme)}>
       <div className="p-8 bg-card rounded-lg shadow-md">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-foreground">Voice Recorder</h1>
