@@ -4,30 +4,39 @@ import { Mic, Square, Sun, Moon } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
+import WaveSurfer from 'wavesurfer.js';
 
 const Index = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState('');
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
-  const canvasRef = useRef(null);
-  const animationRef = useRef(null);
-  const analyserRef = useRef(null);
+  const wavesurferRef = useRef(null);
+  const waveformRef = useRef(null);
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     document.body.className = theme;
+
+    wavesurferRef.current = WaveSurfer.create({
+      container: waveformRef.current,
+      waveColor: theme === 'dark' ? '#8B5CF6' : '#3B82F6',
+      progressColor: theme === 'dark' ? '#EC4899' : '#EF4444',
+      cursorColor: 'transparent',
+      barWidth: 2,
+      barRadius: 3,
+      responsive: true,
+      height: 100,
+      normalize: true,
+      partialRender: true,
+    });
+
+    return () => wavesurferRef.current.destroy();
   }, [theme]);
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioContext.createMediaStreamSource(stream);
-      analyserRef.current = audioContext.createAnalyser();
-      analyserRef.current.fftSize = 256;
-      source.connect(analyserRef.current);
-
       mediaRecorderRef.current = new MediaRecorder(stream);
       
       mediaRecorderRef.current.ondataavailable = (event) => {
@@ -40,14 +49,14 @@ const Index = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         const audioUrl = URL.createObjectURL(audioBlob);
         setAudioURL(audioUrl);
+        wavesurferRef.current.loadBlob(audioBlob);
         toast.success("Recording saved successfully!");
         audioChunksRef.current = [];
-        cancelAnimationFrame(animationRef.current);
       };
 
       mediaRecorderRef.current.start();
       setIsRecording(true);
-      drawAmplitudeMeter();
+      wavesurferRef.current.load(stream);
       toast.success("Recording started!");
     } catch (error) {
       console.error('Error accessing microphone:', error);
@@ -62,43 +71,14 @@ const Index = () => {
     }
   };
 
-  const drawAmplitudeMeter = () => {
-    const canvas = canvasRef.current;
-    const canvasCtx = canvas.getContext('2d');
-    const bufferLength = analyserRef.current.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-
-    const draw = () => {
-      animationRef.current = requestAnimationFrame(draw);
-      analyserRef.current.getByteFrequencyData(dataArray);
-
-      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const gradient = canvasCtx.createLinearGradient(0, 0, canvas.width, 0);
-      gradient.addColorStop(0, theme === 'dark' ? '#8B5CF6' : '#3B82F6');
-      gradient.addColorStop(1, theme === 'dark' ? '#EC4899' : '#EF4444');
-
-      const barWidth = (canvas.width / bufferLength) * 2.5;
-      let x = 0;
-
-      for (let i = 0; i < bufferLength; i++) {
-        const barHeight = dataArray[i] / 2;
-
-        canvasCtx.fillStyle = gradient;
-        canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-
-        x += barWidth + 1;
-      }
-    };
-
-    draw();
-  };
-
   useEffect(() => {
-    return () => {
-      cancelAnimationFrame(animationRef.current);
-    };
-  }, []);
+    if (wavesurferRef.current) {
+      wavesurferRef.current.setOptions({
+        waveColor: theme === 'dark' ? '#8B5CF6' : '#3B82F6',
+        progressColor: theme === 'dark' ? '#EC4899' : '#EF4444',
+      });
+    }
+  }, [theme]);
 
   return (
     <div className={cn("flex flex-col items-center justify-center min-h-screen bg-background", theme)}>
@@ -124,13 +104,13 @@ const Index = () => {
             </Button>
           )}
         </div>
-        {isRecording && (
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-2 text-foreground">Audio Amplitude</h2>
-            <canvas ref={canvasRef} width="300" height="100" className="border border-border rounded-md"></canvas>
+        <div className="mb-6 w-full">
+          <h2 className="text-lg font-semibold mb-2 text-foreground">Audio Waveform</h2>
+          <div ref={waveformRef} className="border border-border rounded-md"></div>
+          {isRecording && (
             <p className="text-sm text-center mt-2 text-destructive">Recording in progress...</p>
-          </div>
-        )}
+          )}
+        </div>
         {audioURL && (
           <div className="flex flex-col items-center">
             <audio src={audioURL} controls className="mb-4" />
