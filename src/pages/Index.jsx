@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Sun, Moon } from "lucide-react";
+import { Mic, Square, Sun, Moon, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ import WaveSurfer from 'wavesurfer.js';
 const Index = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState('');
+  const [isPlaying, setIsPlaying] = useState(false);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const wavesurferRef = useRef(null);
@@ -22,7 +23,7 @@ const Index = () => {
       container: waveformRef.current,
       waveColor: theme === 'dark' ? '#8B5CF6' : '#3B82F6',
       progressColor: theme === 'dark' ? '#EC4899' : '#EF4444',
-      cursorColor: 'transparent',
+      cursorColor: theme === 'dark' ? '#EC4899' : '#EF4444',
       barWidth: 2,
       barRadius: 3,
       responsive: true,
@@ -31,8 +32,18 @@ const Index = () => {
       partialRender: true,
     });
 
+    wavesurferRef.current.on('play', () => setIsPlaying(true));
+    wavesurferRef.current.on('pause', () => setIsPlaying(false));
+    wavesurferRef.current.on('finish', () => setIsPlaying(false));
+
     return () => wavesurferRef.current.destroy();
   }, [theme]);
+
+  const togglePlayPause = () => {
+    if (wavesurferRef.current) {
+      wavesurferRef.current.playPause();
+    }
+  };
 
   const startRecording = async () => {
     try {
@@ -52,11 +63,13 @@ const Index = () => {
         wavesurferRef.current.loadBlob(audioBlob);
         toast.success("Recording saved successfully!");
         audioChunksRef.current = [];
+        setIsPlaying(false);
       };
 
       mediaRecorderRef.current.start();
       setIsRecording(true);
-      wavesurferRef.current.load(stream);
+      wavesurferRef.current.empty();
+      wavesurferRef.current.microphone.start();
       toast.success("Recording started!");
     } catch (error) {
       console.error('Error accessing microphone:', error);
@@ -68,6 +81,7 @@ const Index = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      wavesurferRef.current.microphone.stop();
     }
   };
 
@@ -113,10 +127,15 @@ const Index = () => {
         </div>
         {audioURL && (
           <div className="flex flex-col items-center">
-            <audio src={audioURL} controls className="mb-4" />
-            <Button onClick={() => setAudioURL('')} variant="outline">
-              Clear Recording
-            </Button>
+            <div className="flex space-x-2 mb-4">
+              <Button onClick={togglePlayPause} variant="outline">
+                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                {isPlaying ? 'Pause' : 'Play'}
+              </Button>
+              <Button onClick={() => setAudioURL('')} variant="outline">
+                Clear Recording
+              </Button>
+            </div>
           </div>
         )}
       </div>
